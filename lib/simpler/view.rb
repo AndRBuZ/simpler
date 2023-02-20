@@ -10,6 +10,9 @@ module Simpler
     end
 
     def render(binding)
+      plain = check_template_plain
+      return plain unless plain.nil?
+
       template = File.read(template_path)
 
       ERB.new(template).result(binding)
@@ -27,6 +30,11 @@ module Simpler
 
     def template
       @env['simpler.template']
+    end
+
+    def check_template_plain
+      @template = template
+      @template[:plain] if @template.instance_of?(Hash)
     end
 
     def template_path

@@ -5,10 +5,12 @@ module Simpler
 
     attr_reader :name, :request, :response
 
-    def initialize(env)
+    def initialize(env, logger)
+      @logger = logger
       @name = extract_name
       @request = Rack::Request.new(env)
       @response = Rack::Response.new
+      make_params(env)
     end
 
     def make_response(action)
@@ -19,10 +21,17 @@ module Simpler
       send(action)
       write_response
 
+      logger_info
       @response.finish
     end
 
     private
+
+    def make_params(env)
+      path = env['REQUEST_PATH'].split('/')
+      @request.params[:id] = path[2].to_i
+      @logger.info("Parameters: " + @request.params.to_s)
+    end
 
     def extract_name
       self.class.name.match('(?<name>.+)Controller')[:name].downcase
@@ -48,6 +57,22 @@ module Simpler
 
     def render(template)
       @request.env['simpler.template'] = template
+    end
+
+    def status(status)
+      @response.status = status
+    end
+
+    def headers
+      @response
+    end
+
+    def logger_info
+      @logger.info(
+        "Response:" + @response.status.to_s +
+        @response['Content-Type'].to_s +
+        @request.env['simpler.template_path'].to_s
+      )
     end
 
   end
